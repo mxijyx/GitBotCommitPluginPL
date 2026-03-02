@@ -2,6 +2,7 @@ package com.frshaka.gitbot.settings
 
 import com.frshaka.gitbot.ai.OpenRouterClient
 import com.frshaka.gitbot.prompt.PromptLoader
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.components.JBLabel
@@ -18,8 +19,13 @@ class GitBotConfigurable : Configurable {
     private var panel: JPanel? = null
 
     private val apiKeyField = JPasswordField()
-    private val availableModels = loadOpenrouterModels().toMutableList()
-    private val modelField = ComboBox<String>()
+
+    // Lista mutável de modelos disponíveis; começa vazia e é preenchida de forma assíncrona
+    private val availableModels = mutableListOf<String>()
+
+    // Campo editável: usuário pode digitar o ID do modelo manualmente caso a lista ainda não tenha carregado
+    private val modelField = ComboBox<String>().apply { isEditable = true }
+
     private val languageCombo = ComboBox(arrayOf("PT_BR", "EN"))
 
     private val promptArea = JTextArea(14, 60).apply {
@@ -28,6 +34,9 @@ class GitBotConfigurable : Configurable {
     }
 
     private val resetButton = JButton("Reset to default")
+
+    // Botão para carregar a lista de modelos do OpenRouter de forma assíncrona
+    private val loadModelsButton = JButton("Load Models")
 
     override fun getDisplayName(): String = "GitBot Commit"
 
@@ -53,10 +62,24 @@ class GitBotConfigurable : Configurable {
         }
 
         row(0, "OpenRouter API Key:", apiKeyField)
-        row(1, "Model:", modelField)
+
+        // Linha do modelo: combo + botão "Load Models" lado a lado
+        c.gridy = 1
+        c.gridx = 0
+        c.weightx = 0.0
+        form.add(JBLabel("Model:"), c)
+
+        c.gridx = 1
+        c.weightx = 1.0
+        val modelRow = JPanel(BorderLayout(4, 0)).apply {
+            add(modelField, BorderLayout.CENTER)
+            add(loadModelsButton, BorderLayout.EAST)
+        }
+        form.add(modelRow, c)
+
         row(2, "Commit language:", languageCombo)
 
-        // Prompt editor
+        // Editor de prompt
         c.gridy = 3
         c.gridx = 0
         c.weightx = 0.0
@@ -72,7 +95,7 @@ class GitBotConfigurable : Configurable {
         }
         form.add(promptScroll, c)
 
-        // Reset button under prompt
+        // Botão de reset abaixo do prompt
         c.gridy = 4
         c.gridx = 1
         c.weightx = 1.0
@@ -87,7 +110,7 @@ class GitBotConfigurable : Configurable {
         }
 
         languageCombo.addActionListener {
-            // Quando troca idioma, atualiza o prompt mostrado conforme o que est� salvo
+            // Ao trocar o idioma, exibe o prompt salvo correspondente
             val settings = GitBotSettingsService.getInstance().state
             val lang = languageCombo.selectedItem as String
             ensureDefaultsLoaded(settings)
@@ -95,7 +118,12 @@ class GitBotConfigurable : Configurable {
             promptArea.text = if (lang == "EN") settings.promptEn else settings.promptPtBr
         }
 
-        // Configure model field to show searchable popup
+        // Carrega modelos assincronamente ao clicar no botão
+        loadModelsButton.addActionListener {
+            loadModelsAsync()
+        }
+
+        // Configura o campo de modelo com popup de busca ao clicar
         configureModelField()
         root.add(form, BorderLayout.CENTER)
 
@@ -111,7 +139,7 @@ class GitBotConfigurable : Configurable {
         val savedKey = GitBotSecrets.getApiKey() ?: ""
 
         val uiKey = String(apiKeyField.password).trim()
-        val uiModel = modelField.selectedItem as String
+        val uiModel = (modelField.editor.item as? String)?.trim() ?: (modelField.selectedItem as? String) ?: ""
         val uiLang = languageCombo.selectedItem as String
         val uiPrompt = promptArea.text
 
@@ -128,7 +156,7 @@ class GitBotConfigurable : Configurable {
         ensureDefaultsLoaded(settings)
 
         val uiKey = String(apiKeyField.password).trim()
-        val uiModel = modelField.selectedItem as String
+        val uiModel = (modelField.editor.item as? String)?.trim() ?: (modelField.selectedItem as? String) ?: ""
         val uiLang = languageCombo.selectedItem as String
         val uiPrompt = promptArea.text
 
@@ -153,74 +181,157 @@ class GitBotConfigurable : Configurable {
         val savedKey = GitBotSecrets.getApiKey() ?: ""
 
         apiKeyField.text = savedKey
-        ensureModelInList(settings.model)
-        modelField.selectedItem = settings.model
         languageCombo.selectedItem = settings.language
-
         promptArea.text = if (settings.language == "EN") settings.promptEn else settings.promptPtBr
+
+        // Preenche o modelo salvo no campo editável
+        setModelFieldValue(settings.model)
+
+        // Se já existe API key salva, carrega a lista de modelos em background automaticamente
+        if (savedKey.isNotEmpty()) {
+            loadModelsAsync()
+        }
     }
 
     override fun disposeUIResources() {
         panel = null
     }
 
+    /**
+     * Define o valor do campo de modelo, garantindo que o item esteja na lista
+     * ou simplesmente define o texto quando a lista ainda não foi carregada.
+     */
+    private fun setModelFieldValue(modelName: String) {
+        if (modelName.isBlank()) return
+        ensureModelInList(modelName)
+        modelField.selectedItem = modelName
+    }
+
     private fun ensureModelInList(modelName: String) {
         if (modelName.isBlank()) return
-        if (modelName !in availableModels) {
+        if (availableModels.none { it == modelName }) {
             availableModels += modelName
             availableModels.sort()
+            // Sincroniza o ComboBox com a lista atualizada sem perder a seleção atual
+            val current = (modelField.editor.item as? String) ?: (modelField.selectedItem as? String)
+            modelField.removeAllItems()
+            availableModels.forEach { modelField.addItem(it) }
+            modelField.selectedItem = current
+        }
+    }
+
+    /**
+     * Busca a lista de modelos do OpenRouter em uma thread de background.
+     * Deve ser chamada após o usuário ter configurado a API key.
+     * Atualiza o ComboBox na EDT ao terminar.
+     */
+    private fun loadModelsAsync() {
+        val apiKey = String(apiKeyField.password).trim().ifEmpty {
+            GitBotSecrets.getApiKey() ?: ""
+        }
+
+        if (apiKey.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                panel,
+                "Informe a OpenRouter API Key antes de carregar os modelos.",
+                "API Key ausente",
+                JOptionPane.WARNING_MESSAGE
+            )
+            return
+        }
+
+        loadModelsButton.isEnabled = false
+        loadModelsButton.text = "Loading..."
+
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val models = try {
+                val client = OpenRouterClient(apiKey)
+                client.models().map { it.id }.sorted()
+            } catch (e: Exception) {
+                emptyList()
+            }
+
+            // Atualiza a UI na EDT
+            SwingUtilities.invokeLater {
+                loadModelsButton.isEnabled = true
+                loadModelsButton.text = "Load Models"
+
+                if (models.isEmpty()) {
+                    JOptionPane.showMessageDialog(
+                        panel,
+                        "Não foi possível carregar os modelos. Verifique a API Key e a conexão.",
+                        "Erro ao carregar modelos",
+                        JOptionPane.ERROR_MESSAGE
+                    )
+                    return@invokeLater
+                }
+
+                // Preserva o modelo atualmente selecionado/digitado
+                val current = (modelField.editor.item as? String)?.trim()
+                    ?: (modelField.selectedItem as? String)?.trim()
+                    ?: ""
+
+                availableModels.clear()
+                availableModels.addAll(models)
+
+                modelField.removeAllItems()
+                availableModels.forEach { modelField.addItem(it) }
+
+                // Reaplica a seleção anterior se ainda válida, caso contrário mantém como texto editável
+                if (current.isNotEmpty()) {
+                    modelField.selectedItem = current
+                    if (modelField.selectedItem != current) {
+                        modelField.editor.item = current
+                    }
+                }
+            }
         }
     }
 
     private fun configureModelField() {
-        // Make the combo box non-editable
-        modelField.isEditable = false
-        
-        // Populate initial model list
-        availableModels.forEach { modelField.addItem(it) }
-        
-        // Intercept mouse clicks to show custom popup instead of default
+        // Intercept mouse clicks para exibir popup com busca (somente quando há modelos carregados)
         modelField.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: java.awt.event.MouseEvent) {
-                // Prevent default popup and show custom one
-                e.consume()
-                showSearchablePopup()
+                if (availableModels.isNotEmpty()) {
+                    e.consume()
+                    showSearchablePopup()
+                }
+                // Se a lista estiver vazia, o campo editável padrão do ComboBox é usado normalmente
             }
         })
-        
-        // Also prevent default popup by removing the default UI behavior
-        modelField.isPopupVisible = false
     }
-    
+
     private fun showSearchablePopup() {
         val searchField = JTextField(20)
         val listModel = DefaultListModel<String>()
         availableModels.forEach { listModel.addElement(it) }
-        
+
+        val currentValue = (modelField.editor.item as? String) ?: (modelField.selectedItem as? String) ?: ""
+
         val list = JBList(listModel).apply {
             selectionMode = ListSelectionModel.SINGLE_SELECTION
-            setSelectedValue(modelField.selectedItem, true)
+            setSelectedValue(currentValue, true)
         }
-        
-        // Match popup width to combo box width and increase height
+
+        // Ajusta largura do popup à largura do combo, com mínimo de 400px
         val comboWidth = modelField.width.coerceAtLeast(400)
         val popupHeight = 400
-        
+
         val scrollPane = JBScrollPane(list)
         scrollPane.preferredSize = java.awt.Dimension(comboWidth, popupHeight)
-        
+
         val panel = JPanel(BorderLayout()).apply {
             add(searchField, BorderLayout.NORTH)
             add(scrollPane, BorderLayout.CENTER)
-            preferredSize = java.awt.Dimension(comboWidth, popupHeight + 30) // +30 for search field
+            preferredSize = java.awt.Dimension(comboWidth, popupHeight + 30) // +30 para o campo de busca
         }
-        
-        // Filter list as user types
+
+        // Filtra a lista conforme o usuário digita
         searchField.document.addDocumentListener(object : javax.swing.event.DocumentListener {
             override fun insertUpdate(e: javax.swing.event.DocumentEvent) = filterList()
             override fun removeUpdate(e: javax.swing.event.DocumentEvent) = filterList()
             override fun changedUpdate(e: javax.swing.event.DocumentEvent) = filterList()
-            
+
             private fun filterList() {
                 val filter = searchField.text.trim()
                 listModel.clear()
@@ -229,7 +340,7 @@ class GitBotConfigurable : Configurable {
                     .forEach { listModel.addElement(it) }
             }
         })
-        
+
         val popup = com.intellij.openapi.ui.popup.JBPopupFactory.getInstance()
             .createComponentPopupBuilder(panel, searchField)
             .setTitle("Select Model")
@@ -237,16 +348,15 @@ class GitBotConfigurable : Configurable {
             .setResizable(true)
             .setRequestFocus(true)
             .createPopup()
-        
-        // Handle selection
+
+        // Seleciona o modelo ao clicar na lista
         list.addListSelectionListener {
             if (!it.valueIsAdjusting && list.selectedValue != null) {
                 modelField.selectedItem = list.selectedValue
                 popup.closeOk(null)
             }
         }
-        
-        // Show popup below the combo box
+
         popup.showUnderneathOf(modelField)
     }
 
@@ -265,16 +375,5 @@ class GitBotConfigurable : Configurable {
         } else {
             PromptLoader.load("prompts/commit_prompt_ptbr.txt")
         }
-    }
-
-    private fun loadOpenrouterModels(): List<String> {
-        val apiKey = GitBotSecrets.getApiKey() ?: return emptyList()
-        val openrouter = OpenRouterClient(apiKey)
-
-        val models = openrouter.models()
-
-        return models
-            .map { model -> model.id }
-            .sorted()
     }
 }
