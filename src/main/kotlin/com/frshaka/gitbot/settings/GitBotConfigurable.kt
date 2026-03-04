@@ -44,6 +44,48 @@ class GitBotConfigurable : Configurable {
         val root = JPanel(BorderLayout())
         val form = JPanel(GridBagLayout())
 
+        // Aviso exibido quando o PasswordSafe está em modo memória (keyring do sistema indisponível).
+        // Nesse caso a API key não é persistida entre sessões da IDE.
+        // O texto é exibido no idioma configurado no plugin.
+        if (GitBotSecrets.isMemoryOnly()) {
+            val lang = GitBotSettingsService.getInstance().state.language
+            val warningText = if (lang == "PT_BR") {
+                "<html>" +
+                "<b>⚠ Atenção: a API Key não será salva entre sessões da IDE.</b><br/><br/>" +
+                "O cofre de senhas do IntelliJ está operando apenas em memória porque o " +
+                "gerenciador de credenciais do sistema não está disponível.<br/><br/>" +
+                "<b>Como corrigir:</b><br/>" +
+                "• <b>Windows:</b> verifique se o <i>Windows Credential Manager</i> está ativo " +
+                "(<i>Painel de Controle → Gerenciador de Credenciais</i>).<br/>" +
+                "• <b>Linux:</b> instale e inicie o <i>KWallet</i> ou <i>GNOME Keyring (SecretService)</i> " +
+                "e certifique-se de que o daemon está em execução antes de abrir o IntelliJ.<br/>" +
+                "• <b>macOS:</b> verifique se o <i>Keychain Access</i> está desbloqueado.<br/><br/>" +
+                "Após corrigir, reinicie o IntelliJ e reconfigure a API Key." +
+                "</html>"
+            } else {
+                "<html>" +
+                "<b>⚠ Warning: your API Key will not be saved between IDE sessions.</b><br/><br/>" +
+                "IntelliJ's password safe is running in memory-only mode because the system " +
+                "credential manager is not available.<br/><br/>" +
+                "<b>How to fix:</b><br/>" +
+                "• <b>Windows:</b> make sure <i>Windows Credential Manager</i> is enabled " +
+                "(<i>Control Panel → Credential Manager</i>).<br/>" +
+                "• <b>Linux:</b> install and start <i>KWallet</i> or <i>GNOME Keyring (SecretService)</i> " +
+                "and ensure the daemon is running before launching IntelliJ.<br/>" +
+                "• <b>macOS:</b> make sure <i>Keychain Access</i> is unlocked.<br/><br/>" +
+                "After fixing, restart IntelliJ and re-enter your API Key." +
+                "</html>"
+            }
+            val warning = JLabel(warningText).apply {
+                foreground = java.awt.Color(180, 80, 0)
+                border = BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(java.awt.Color(200, 120, 0)),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                )
+            }
+            root.add(warning, BorderLayout.NORTH)
+        }
+
         val c = GridBagConstraints().apply {
             fill = GridBagConstraints.HORIZONTAL
             insets = Insets(6, 6, 6, 6)

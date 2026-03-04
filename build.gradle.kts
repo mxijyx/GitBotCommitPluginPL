@@ -39,6 +39,14 @@ intellijPlatform {
             <h2>Bug Fixes</h2>
             <ul>
                 <li>
+                    <b>API Key no longer lost after restarting the IDE.</b><br/>
+                    The credential lookup key was inconsistent between save and load operations.
+                    On certain backends (Windows Credential Manager, KWallet, SecretService),
+                    this mismatch caused the stored key to be undetectable on the next startup,
+                    making the API Key appear to have been erased. Both operations now use the
+                    same key, ensuring credentials are always found correctly.
+                </li>
+                <li>
                     <b>Settings screen no longer freezes on first install.</b><br/>
                     The model list was loaded synchronously on the UI thread during class initialization,
                     causing an infinite loading state whenever the Settings page was opened without a
@@ -54,6 +62,14 @@ intellijPlatform {
             </ul>
             <h2>Improvements</h2>
             <ul>
+                <li>
+                    <b>Warning shown when system keyring is unavailable.</b><br/>
+                    If IntelliJ's password safe is running in memory-only mode (e.g. KWallet or
+                    Windows Credential Manager not accessible), a warning is now displayed in the
+                    Settings page informing the user that the API Key will not be persisted between
+                    IDE sessions, along with step-by-step instructions to fix the issue on Windows,
+                    Linux and macOS. The message respects the language configured in the plugin (PT-BR or EN).
+                </li>
                 <li>
                     <b>New "Load Models" button in Settings.</b><br/>
                     A dedicated button next to the model field lets you fetch the full list of available
