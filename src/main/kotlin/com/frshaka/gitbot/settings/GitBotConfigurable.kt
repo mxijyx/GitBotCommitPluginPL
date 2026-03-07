@@ -26,7 +26,7 @@ class GitBotConfigurable : Configurable {
     // Campo editável: usuário pode digitar o ID do modelo manualmente caso a lista ainda não tenha carregado
     private val modelField = ComboBox<String>().apply { isEditable = true }
 
-    private val languageCombo = ComboBox(arrayOf("PT_BR", "EN"))
+    private val languageCombo = ComboBox(arrayOf("PT_BR", "EN", "PL"))
 
     private val promptArea = JTextArea(14, 60).apply {
         lineWrap = true
@@ -61,6 +61,19 @@ class GitBotConfigurable : Configurable {
                 "e certifique-se de que o daemon está em execução antes de abrir o IntelliJ.<br/>" +
                 "• <b>macOS:</b> verifique se o <i>Keychain Access</i> está desbloqueado.<br/><br/>" +
                 "Após corrigir, reinicie o IntelliJ e reconfigure a API Key." +
+                "</html>"
+            } else if (lang =="PL") {
+                "<html>" +
+                "<b>⚠ Ostrzeżenie: Twój klucz API nie zostanie zapisany między sesjami IDE.</b><br/><br/>" +
+                "Sejf haseł IntelliJ działa w trybie tylko pamięci, ponieważ systemowy menedżer poświadczeń " +
+                "jest niedostępny.<br/><br/>" +
+                "<b>Jak naprawić:</b><br/>" +
+                "• <b>Windows:</b> upewnij się, że <i>Menedżer poświadczeń systemu Windows</i> jest włączony " +
+                "(<i>Panel sterowania → Menedżer poświadczeń</i>).<br/>" +
+                "• <b>Linux:</b> zainstaluj i uruchom <i>KWallet</i> lub <i>GNOME Keyring (SecretService)</i> " +
+                "i upewnij się, że demon jest uruchomiony przed uruchomieniem IntelliJ.<br/>" +
+                "• <b>macOS:</b> upewnij się, że <i>Keychain Dostęp</i> jest odblokowany.<br/><br/>" +
+                "Po naprawieniu, uruchom ponownie IntelliJ i ponownie wprowadź klucz API." +
                 "</html>"
             } else {
                 "<html>" +
@@ -157,7 +170,7 @@ class GitBotConfigurable : Configurable {
             val lang = languageCombo.selectedItem as String
             ensureDefaultsLoaded(settings)
 
-            promptArea.text = if (lang == "EN") settings.promptEn else settings.promptPtBr
+            promptArea.text = if (lang == "PT_BR") settings.promptPtBr else if (lang == "PL") settings.promptPl else settings.promptEn
         }
 
         // Carrega modelos assincronamente ao clicar no botão
@@ -185,7 +198,7 @@ class GitBotConfigurable : Configurable {
         val uiLang = languageCombo.selectedItem as String
         val uiPrompt = promptArea.text
 
-        val currentSavedPrompt = if (uiLang == "EN") settings.promptEn else settings.promptPtBr
+        val currentSavedPrompt = if (uiLang == "PL") settings.promptPl else if (uiLang == "PT_BR") settings.promptPtBr else settings.promptEn
 
         return uiKey != savedKey ||
                 uiModel != settings.model ||
@@ -209,10 +222,13 @@ class GitBotConfigurable : Configurable {
         settings.model = uiModel
         settings.language = uiLang
 
-        if (uiLang == "EN") {
-            settings.promptEn = uiPrompt
-        } else {
+        if (uiLang == "PT_BR") {
             settings.promptPtBr = uiPrompt
+        } else if (uiLang == "PL"){
+            settings.promptPl = uiPrompt
+        } else {
+            settings.promptEn = uiPrompt
+
         }
     }
 
@@ -224,7 +240,7 @@ class GitBotConfigurable : Configurable {
 
         apiKeyField.text = savedKey
         languageCombo.selectedItem = settings.language
-        promptArea.text = if (settings.language == "EN") settings.promptEn else settings.promptPtBr
+        promptArea.text = if (settings.language == "PT_BR") settings.promptPtBr else if (settings.language == "PL") settings.promptPl else settings.promptEn
 
         // Preenche o modelo salvo no campo editável
         setModelFieldValue(settings.model)
@@ -409,13 +425,18 @@ class GitBotConfigurable : Configurable {
         if (settings.promptEn.isBlank()) {
             settings.promptEn = loadDefaultPrompt("EN")
         }
+        if (settings.promptPl.isBlank()) {
+            settings.promptPl = loadDefaultPrompt("PL")
+        }
     }
 
     private fun loadDefaultPrompt(lang: String): String {
-        return if (lang == "EN") {
-            PromptLoader.load("prompts/commit_prompt_en.txt")
-        } else {
+        return if (lang == "PT_BR") {
             PromptLoader.load("prompts/commit_prompt_ptbr.txt")
+        } else if (lang == "PL"){
+            PromptLoader.load("prompts/commit_prompt_pl.txt")
+        } else {
+            PromptLoader.load("prompts/commit_prompt_en.txt")
         }
     }
 }
