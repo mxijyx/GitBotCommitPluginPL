@@ -49,45 +49,49 @@ class GitBotConfigurable : Configurable {
         // O texto é exibido no idioma configurado no plugin.
         if (GitBotSecrets.isMemoryOnly()) {
             val lang = GitBotSettingsService.getInstance().state.language
-            val warningText = if (lang == "PT_BR") {
-                "<html>" +
-                "<b>⚠ Atenção: a API Key não será salva entre sessões da IDE.</b><br/><br/>" +
-                "O cofre de senhas do IntelliJ está operando apenas em memória porque o " +
-                "gerenciador de credenciais do sistema não está disponível.<br/><br/>" +
-                "<b>Como corrigir:</b><br/>" +
-                "• <b>Windows:</b> verifique se o <i>Windows Credential Manager</i> está ativo " +
-                "(<i>Painel de Controle → Gerenciador de Credenciais</i>).<br/>" +
-                "• <b>Linux:</b> instale e inicie o <i>KWallet</i> ou <i>GNOME Keyring (SecretService)</i> " +
-                "e certifique-se de que o daemon está em execução antes de abrir o IntelliJ.<br/>" +
-                "• <b>macOS:</b> verifique se o <i>Keychain Access</i> está desbloqueado.<br/><br/>" +
-                "Após corrigir, reinicie o IntelliJ e reconfigure a API Key." +
-                "</html>"
-            } else if (lang =="PL") {
-                "<html>" +
-                "<b>⚠ Ostrzeżenie: Twój klucz API nie zostanie zapisany między sesjami IDE.</b><br/><br/>" +
-                "Sejf haseł IntelliJ działa w trybie tylko pamięci, ponieważ systemowy menedżer poświadczeń " +
-                "jest niedostępny.<br/><br/>" +
-                "<b>Jak naprawić:</b><br/>" +
-                "• <b>Windows:</b> upewnij się, że <i>Menedżer poświadczeń systemu Windows</i> jest włączony " +
-                "(<i>Panel sterowania → Menedżer poświadczeń</i>).<br/>" +
-                "• <b>Linux:</b> zainstaluj i uruchom <i>KWallet</i> lub <i>GNOME Keyring (SecretService)</i> " +
-                "i upewnij się, że demon jest uruchomiony przed uruchomieniem IntelliJ.<br/>" +
-                "• <b>macOS:</b> upewnij się, że <i>Keychain Dostęp</i> jest odblokowany.<br/><br/>" +
-                "Po naprawieniu, uruchom ponownie IntelliJ i ponownie wprowadź klucz API." +
-                "</html>"
-            } else {
-                "<html>" +
-                "<b>⚠ Warning: your API Key will not be saved between IDE sessions.</b><br/><br/>" +
-                "IntelliJ's password safe is running in memory-only mode because the system " +
-                "credential manager is not available.<br/><br/>" +
-                "<b>How to fix:</b><br/>" +
-                "• <b>Windows:</b> make sure <i>Windows Credential Manager</i> is enabled " +
-                "(<i>Control Panel → Credential Manager</i>).<br/>" +
-                "• <b>Linux:</b> install and start <i>KWallet</i> or <i>GNOME Keyring (SecretService)</i> " +
-                "and ensure the daemon is running before launching IntelliJ.<br/>" +
-                "• <b>macOS:</b> make sure <i>Keychain Access</i> is unlocked.<br/><br/>" +
-                "After fixing, restart IntelliJ and re-enter your API Key." +
-                "</html>"
+            val warningText = when (lang) {
+                "PT_BR" -> {
+                    "<html>" +
+                            "<b>⚠ Atenção: a API Key não será salva entre sessões da IDE.</b><br/><br/>" +
+                            "O cofre de senhas do IntelliJ está operando apenas em memória porque o " +
+                            "gerenciador de credenciais do sistema não está disponível.<br/><br/>" +
+                            "<b>Como corrigir:</b><br/>" +
+                            "• <b>Windows:</b> verifique se o <i>Windows Credential Manager</i> está ativo " +
+                            "(<i>Painel de Controle → Gerenciador de Credenciais</i>).<br/>" +
+                            "• <b>Linux:</b> instale e inicie o <i>KWallet</i> ou <i>GNOME Keyring (SecretService)</i> " +
+                            "e certifique-se de que o daemon está em execução antes de abrir o IntelliJ.<br/>" +
+                            "• <b>macOS:</b> verifique se o <i>Keychain Access</i> está desbloqueado.<br/><br/>" +
+                            "Após corrigir, reinicie o IntelliJ e reconfigure a API Key." +
+                            "</html>"
+                }
+                "PL" -> {
+                    "<html>" +
+                            "<b>⚠ Ostrzeżenie: Twój klucz API nie zostanie zapisany między sesjami IDE.</b><br/><br/>" +
+                            "Sejf haseł IntelliJ działa w trybie tylko pamięci, ponieważ systemowy menedżer poświadczeń " +
+                            "jest niedostępny.<br/><br/>" +
+                            "<b>Jak naprawić:</b><br/>" +
+                            "• <b>Windows:</b> upewnij się, że <i>Menedżer poświadczeń systemu Windows</i> jest włączony " +
+                            "(<i>Panel sterowania → Menedżer poświadczeń</i>).<br/>" +
+                            "• <b>Linux:</b> zainstaluj i uruchom <i>KWallet</i> lub <i>GNOME Keyring (SecretService)</i> " +
+                            "i upewnij się, że demon jest uruchomiony przed uruchomieniem IntelliJ.<br/>" +
+                            "• <b>macOS:</b> upewnij się, że <i>Keychain Dostęp</i> jest odblokowany.<br/><br/>" +
+                            "Po naprawieniu, uruchom ponownie IntelliJ i ponownie wprowadź klucz API." +
+                            "</html>"
+                }
+                else -> {
+                    "<html>" +
+                            "<b>⚠ Warning: your API Key will not be saved between IDE sessions.</b><br/><br/>" +
+                            "IntelliJ's password safe is running in memory-only mode because the system " +
+                            "credential manager is not available.<br/><br/>" +
+                            "<b>How to fix:</b><br/>" +
+                            "• <b>Windows:</b> make sure <i>Windows Credential Manager</i> is enabled " +
+                            "(<i>Control Panel → Credential Manager</i>).<br/>" +
+                            "• <b>Linux:</b> install and start <i>KWallet</i> or <i>GNOME Keyring (SecretService)</i> " +
+                            "and ensure the daemon is running before launching IntelliJ.<br/>" +
+                            "• <b>macOS:</b> make sure <i>Keychain Access</i> is unlocked.<br/><br/>" +
+                            "After fixing, restart IntelliJ and re-enter your API Key." +
+                            "</html>"
+                }
             }
             val warning = JLabel(warningText).apply {
                 foreground = java.awt.Color(180, 80, 0)
@@ -139,7 +143,7 @@ class GitBotConfigurable : Configurable {
         c.gridx = 0
         c.weightx = 0.0
         c.anchor = GridBagConstraints.NORTHWEST
-        form.add(JBLabel("Prompt Template:"), c)
+        form.add(JBLabel("Prompt template:"), c)
 
         c.gridx = 1
         c.weightx = 1.0
@@ -222,13 +226,17 @@ class GitBotConfigurable : Configurable {
         settings.model = uiModel
         settings.language = uiLang
 
-        if (uiLang == "PT_BR") {
-            settings.promptPtBr = uiPrompt
-        } else if (uiLang == "PL"){
-            settings.promptPl = uiPrompt
-        } else {
-            settings.promptEn = uiPrompt
+        when (uiLang) {
+            "PT_BR" -> {
+                settings.promptPtBr = uiPrompt
+            }
+            "PL" -> {
+                settings.promptPl = uiPrompt
+            }
+            else -> {
+                settings.promptEn = uiPrompt
 
+            }
         }
     }
 
@@ -431,12 +439,16 @@ class GitBotConfigurable : Configurable {
     }
 
     private fun loadDefaultPrompt(lang: String): String {
-        return if (lang == "PT_BR") {
-            PromptLoader.load("prompts/commit_prompt_ptbr.txt")
-        } else if (lang == "PL"){
-            PromptLoader.load("prompts/commit_prompt_pl.txt")
-        } else {
-            PromptLoader.load("prompts/commit_prompt_en.txt")
+        return when (lang) {
+            "PT_BR" -> {
+                PromptLoader.load("prompts/commit_prompt_ptbr.txt")
+            }
+            "PL" -> {
+                PromptLoader.load("prompts/commit_prompt_pl.txt")
+            }
+            else -> {
+                PromptLoader.load("prompts/commit_prompt_en.txt")
+            }
         }
     }
 }

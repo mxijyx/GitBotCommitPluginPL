@@ -111,8 +111,9 @@ class GenerateCommitAction : AnAction() {
         }
 
         val systemPrompt = when (settings.language) {
-            "EN" -> settings.promptEn
-            else -> settings.promptPtBr
+            "PT_BR" -> settings.promptPtBr
+            "PL" -> settings.promptPl
+            else -> settings.promptEn
         }
 
         val userPrompt = "Here's the git diff:\n\n$fullDiff"
@@ -126,7 +127,7 @@ class GenerateCommitAction : AnAction() {
                 val client = OpenRouterClient(apiKey)
 
                 try {
-                    indicator.text = "GitBot Commit"
+                    indicator.text = "GitBot commit"
                     indicator.text2 = "Calling OpenRouter..."
                     indicator.isIndeterminate = true
 

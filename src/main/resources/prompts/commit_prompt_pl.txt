@@ -91,5 +91,3 @@ Dane wyjściowe muszą być zawsze w postaci zwykłego tekstu.
 - Zwróć tylko komunikat zatwierdzenia o maksymalnej długości 72 znaków w wierszu.
 
 ---
-Send feedback
-Translation results available
