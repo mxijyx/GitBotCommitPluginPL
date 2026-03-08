@@ -1,18 +1,21 @@
 # GitBot Commit PL - a fork o GitBot Commit 
 
-**GitBot Commit** is an IntelliJ IDEA plugin that generates AI-powered commit messages directly from your staged changes, integrated into the native Git Commit workflow.
-
-It reads your `git diff --cached`, sends it to an AI model via [OpenRouter](https://openrouter.ai), and writes a structured commit message following the **Conventional Commits** standard with emojis.
-
 This fork provides a Polish language version (choose `PL` for Polish in the settings). 
 
-A gif below shows how to use the GitBot in the Polish version. 
+The gif shows how to use the GitBot in the Polish version. 
+
 ![](https://github.com/mxijyx/GitBotCommitPluginPL/blob/main/java.gif)
 
 Thanks a lot to the original authors!
 The following part of this README is from the original GitBot repository. 
+
 ---
 
+**GitBot Commit** is an IntelliJ IDEA plugin that generates AI-powered commit messages directly from your staged changes, integrated into the native Git Commit workflow.
+
+It reads your `git diff --cached`, sends it to an AI model via [OpenRouter](https://openrouter.ai), and writes a structured commit message following the **Conventional Commits** standard with emojis.
+
+---
 ## Requirements
 
 - IntelliJ IDEA (2022.1 or later)
@@ -406,4 +409,5 @@ Por padrão, o plugin utiliza o diff completo de todos os arquivos staged. Se qu
 MIT — veja [LICENSE](LICENSE) para detalhes.
 
 **Código-fonte:** [github.com/frshaka/GitBotCommitPlugin](https://github.com/frshaka/GitBotCommitPlugin)
+
 
