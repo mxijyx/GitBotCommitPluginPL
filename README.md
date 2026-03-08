@@ -1,4 +1,4 @@
-# GitBot Commit PL - a fork o GitBot Commit 
+# GitBot Commit PL - a fork of GitBot Commit 
 
 This fork provides a Polish language version (choose `PL` for Polish in the settings). 
 
@@ -409,5 +409,6 @@ Por padrão, o plugin utiliza o diff completo de todos os arquivos staged. Se qu
 MIT — veja [LICENSE](LICENSE) para detalhes.
 
 **Código-fonte:** [github.com/frshaka/GitBotCommitPlugin](https://github.com/frshaka/GitBotCommitPlugin)
+
 
 
